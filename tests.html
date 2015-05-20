@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QUnit Tests for Driver License Validator</title>
+  <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.18.0.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+  <script src="http://code.jquery.com/qunit/qunit-1.18.0.js"></script>
+  <script src="dlnvalidator.js"></script>
+  <script>
+    String.prototype.repeat = function( num ){
+      return new Array( num + 1 ).join( this );
+    }
+
+    function testNumericRange(assert, country, region, min, max, testAlphaNumeric, testBelow, testAbove){
+      
+      // test empty string
+      assert.notOk(dlnValidator.isValid(country,region,''));
+      
+      // test less than the min
+      if(testBelow){
+          for(var i=1; i< min; i++){
+              assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(i)));
+          }
+      }
+      
+      // test the numbers within the range
+      for(var i=min; i<= max; i++){
+          assert.ok(dlnValidator.isValid(country,region,'1'.repeat(i)));
+      }
+
+      if(testAlphaNumeric){
+          assert.notOk(dlnValidator.isValid(country,region,'a'));
+          if(min > 1){
+              assert.notOk(dlnValidator.isValid(country,region, 'a' + '1'.repeat(min-1)));
+              assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(min-1) + 'a'));
+          }
+          assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(max-1) + 'a'));
+          assert.notOk(dlnValidator.isValid(country,region, 'a' + '1'.repeat(max-1)));
+          assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(max) + 'a'));
+          assert.notOk(dlnValidator.isValid(country,region, 'a' + '1'.repeat(max)));  
+      }
+
+      // test numbers more than the max
+      if(testAbove){
+          assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(max+1)));
+          assert.notOk(dlnValidator.isValid(country,region,'1'.repeat(max+2)));
+      }
+    }
+
+    QUnit.test( "Test Alabama", function( assert ) {
+        // Alabama 7 Numeric 
+        testNumericRange(assert, 'US','AL', 7, 7, true, true, true);
+    });
+
+    QUnit.test( "Test Alaska", function( assert ) {
+        // Alaska 1-7Numeric 
+        testNumericRange(assert, 'US','AK', 1, 7, true, true, true);
+    });
+
+    QUnit.test( "Test Arizona", function( assert ) {
+        // TODO conflicting if 2Alpha+2-5Numeric or 2Alpha+3-6Numeric
+        // for now il be lenient and allow 2-6
+        // Arizona 1Alpha+1-8Numeric OR 2Alpha+2-6Numeric OR 9Numeric 
+        testNumericRange(assert, 'US','AZ', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','AZ', 'a1'));
+        assert.ok(dlnValidator.isValid('US','AZ', 'a12345678'));
+        assert.ok(dlnValidator.isValid('US','AZ', 'aa11'));
+        assert.ok(dlnValidator.isValid('US','AZ', 'aa12345'));
+        assert.ok(dlnValidator.isValid('US','AZ', 'aa12346'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'a'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aa'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aa1'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'a123456789'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aa1234567'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aaa11'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aaa12345'));
+        assert.notOk(dlnValidator.isValid('US','AZ', 'aaa12345'));
+    });
+
+    QUnit.test( "Test Arkansas", function( assert ) {
+        // TODO conflicting if 4-9 or 9 or 8-9; 8-9 seems most valid
+        // Alaska 8-9Numeric 
+        testNumericRange(assert, 'US','AR', 8, 9, true, true, true);
+    });
+
+    QUnit.test( "Test California", function( assert ) {
+        // California  1Alpha+7Numeric
+        assert.ok(dlnValidator.isValid('US','CA', 'a1234567'));
+        assert.ok(dlnValidator.isValid('US','CA', 'Z9999999'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'a'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aa'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aa1'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'a123456789'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aa123456'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aaa11'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aaa12345'));
+        assert.notOk(dlnValidator.isValid('US','CA', 'aaa12345'));
+    });
+
+    QUnit.test( "Test Colorado", function( assert ) {
+        // Colorado  9Numeric or 1Alpha+3-6Numeric or 2Alpha+2-5Numeric
+        // TODO https://insurancesolutions.custhelp.com/ci/fattach/get/2837083/0/session/L2F2LzEvdGltZS8xNDMyMDc0NzI5L3NpZC9MQ2hYV0xtbQ==/filename/MVR+Order+Requirements_122014.pdf
+        // implies 1 alpha + 1-6 numeric is valid...
+        testNumericRange(assert, 'US','CO', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','CO', 'a123'));
+        assert.ok(dlnValidator.isValid('US','CO', 'a123456'));
+        assert.ok(dlnValidator.isValid('US','CO', 'aa11'));
+        assert.ok(dlnValidator.isValid('US','CO', 'aa12345'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'a'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aa'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aa1'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'a1234567'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aa123456'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aaa11'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aaa12345'));
+        assert.notOk(dlnValidator.isValid('US','CO', 'aaa12345'));
+    });
+
+    QUnit.test( "Test Connecticut", function( assert ) {
+        // Connecticut   9Numeric;
+        testNumericRange(assert, 'US','CT', 9, 9, true, true, true);
+    });
+
+    QUnit.test( "Test Delaware", function( assert ) {
+        // Delaware  1-7Numeric
+        testNumericRange(assert, 'US','DE', 1, 7, true, true, true);
+    });
+
+    QUnit.test( "Test District of Columbia", function( assert ) {
+        // District of Columbia  7Numeric or 9Numeric
+        // TODO this source https://insurancesolutions.custhelp.com/ci/fattach/get/2837083/0/session/L2F2LzEvdGltZS8xNDMyMDc0NzI5L3NpZC9MQ2hYV0xtbQ==/filename/MVR+Order+Requirements_122014.pdf
+        // implies it could be 2 alpha + 8
+        testNumericRange(assert, 'US','DC', 7, 7, true, true, false);
+        testNumericRange(assert, 'US','DC', 9, 9, true, false, true);
+    });
+
+    QUnit.test( "Test Florida", function( assert ) {
+        // Florida   1Alpha+12Numeric
+        // TODO https://insurancesolutions.custhelp.com/ci/fattach/get/2837083/0/session/L2F2LzEvdGltZS8xNDMyMDc0NzI5L3NpZC9MQ2hYV0xtbQ==/filename/MVR+Order+Requirements_122014.pdf implies
+        // 1 alpha+11 is valid, however this one: http://northwindinternational.com/docs/Identification%20Resource%20Directory.pdf
+        // implies it is only for prior invalid licenses
+        assert.ok(dlnValidator.isValid('US','FL', 'a123456789012'));
+        assert.notOk(dlnValidator.isValid('US','FL', 'a12345678901'));
+        assert.notOk(dlnValidator.isValid('US','FL', 'a1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','FL', '123456789012'));
+        assert.notOk(dlnValidator.isValid('US','FL', '1234567890123'));  
+    });
+
+
+
+    QUnit.test( "Test Georgia", function( assert ) {
+        // Georgia   7-9Numeric
+        // TODO may be only 9 according to some sources
+        testNumericRange(assert, 'US','GA', 7, 9, true, true, true);
+    });
+    
+    QUnit.test( "Test Hawaii", function( assert ) {
+        // Hawaii  H+8Numeric or 9Numeric
+        testNumericRange(assert, 'US','HI', 9, 9, false, false, true);
+        assert.ok(dlnValidator.isValid('US','HI', 'H12345678'));
+        assert.ok(dlnValidator.isValid('US','HI', '012345678'));
+        assert.notOk(dlnValidator.isValid('US','HI', 'a12345678'));
+        assert.notOk(dlnValidator.isValid('US','HI', '0123456789'));
+        assert.notOk(dlnValidator.isValid('US','HI', '1'));
+        assert.notOk(dlnValidator.isValid('US','HI', 'a'));
+    });
+
+    QUnit.test( "Test Idaho", function( assert ) {
+        // Idaho   2Alpha+6Numeric+1Alpha or 9Numeric
+        testNumericRange(assert, 'US','ID', 9, 9, false, false, true);
+        assert.ok(dlnValidator.isValid('US','ID', 'AA123456A'));
+        assert.ok(dlnValidator.isValid('US','ID', '012345678'));
+        assert.notOk(dlnValidator.isValid('US','ID', 'a12345678'));
+        assert.notOk(dlnValidator.isValid('US','ID', '0123456789'));
+        assert.notOk(dlnValidator.isValid('US','ID', '1'));
+        assert.notOk(dlnValidator.isValid('US','ID', 'a'));
+        assert.notOk(dlnValidator.isValid('US','ID', 'A123456A'));
+        assert.notOk(dlnValidator.isValid('US','ID', '0A123456A'));
+    });
+
+    QUnit.test( "Test Illinois", function( assert ) {
+        // Illinois  1Alpha+11Numeric
+        // TODO some sources e.g. http://adr-inc.com/PDFs/State_DLFormats.pdf 
+        // implies 1Alpha+12Numeric
+        assert.ok(dlnValidator.isValid('US','IL', 'A12345678901'));
+        assert.notOk(dlnValidator.isValid('US','IL', 'a1234567890'));
+        assert.notOk(dlnValidator.isValid('US','IL', 'b123456789012'));
+        assert.notOk(dlnValidator.isValid('US','IL', '1'));
+        assert.notOk(dlnValidator.isValid('US','IL', 'a'));
+    });
+
+    QUnit.test( "Test Indiana", function( assert ) {
+        // Indiana 1Alpha+9Numeric or 9Numeric or 10Numeric
+        // TODO 1Alpha+9Numeric may be too lenient, some sources ref it some dont
+        testNumericRange(assert, 'US','IN', 9, 9, false, true, false);
+        testNumericRange(assert, 'US','IN', 10, 10, false, false, true);
+        assert.ok(dlnValidator.isValid('US','IN', 'A123456789'));
+        assert.ok(dlnValidator.isValid('US','IN', '123456789'));
+        assert.ok(dlnValidator.isValid('US','IN', '1234567890'));
+        assert.notOk(dlnValidator.isValid('US','IN', 'A1234567890'));
+        assert.notOk(dlnValidator.isValid('US','IN', 'a'));
+    });
+
+    QUnit.test( "Test Iowa", function( assert ) {
+        // Iowa  9Numeric or 3Numeric+2Alpha+4Numeric
+        testNumericRange(assert, 'US','IA', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','IA', '123AA4567'));
+        assert.ok(dlnValidator.isValid('US','IA', '123456789'));
+        assert.notOk(dlnValidator.isValid('US','IA', '123A14567'));
+        assert.notOk(dlnValidator.isValid('US','IA', 'a'));
+    });
+
+    QUnit.test( "Test Kansas", function( assert ) {
+        // Kansas  K+8Numeric or 9Numeric
+        // TODO some sources imply a format of ANANAN may be valid
+        testNumericRange(assert, 'US','KS', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','KS', '123456789'));
+        assert.ok(dlnValidator.isValid('US','KS', 'K12345678'));
+        assert.notOk(dlnValidator.isValid('US','KS', 'A12345678'));
+        assert.notOk(dlnValidator.isValid('US','KS', 'K123456789'));
+        assert.notOk(dlnValidator.isValid('US','KS', 'K1234567'));
+        assert.notOk(dlnValidator.isValid('US','KS', 'a'));
+    });
+
+    QUnit.test( "Test Kentucky", function( assert ) {
+        // Kentucky  1Alpha+8Numeric or 9Numeric
+        testNumericRange(assert, 'US','KY', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','KY', '123456789'));
+        assert.ok(dlnValidator.isValid('US','KY', 'K12345678'));
+        assert.ok(dlnValidator.isValid('US','KY', 'A12345678'));
+        assert.notOk(dlnValidator.isValid('US','KY', 'K123456789'));
+        assert.notOk(dlnValidator.isValid('US','KY', 'K1234567'));
+        assert.notOk(dlnValidator.isValid('US','KY', 'a'));
+    });
+    
+    QUnit.test( "Test Louisiana", function( assert ) {
+        // Louisiana   1-9Numeric
+        // TODO: some sources imply this is just 9
+        testNumericRange(assert, 'US','LA', 1, 9, true, true, true);
+    });
+    
+    QUnit.test( "Test Maine", function( assert ) {
+        // Maine   7Numeric
+        // TODO some sources indicate could be 7Numeric+X
+        // however this seems to be for prior licenses and not the current one
+        testNumericRange(assert, 'US','ME', 7, 7, false, true, true);
+    });
+
+    QUnit.test( "Test Maryland", function( assert ) {
+        // Maryland  1Alpha+12Numeric
+        assert.ok(dlnValidator.isValid('US','MD', 'K123456789012'));
+        assert.ok(dlnValidator.isValid('US','MD', 'A123456789012'));
+        assert.notOk(dlnValidator.isValid('US','MD', 'K1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','MD', 'K12345678901'));
+        assert.notOk(dlnValidator.isValid('US','MD', 'a'));
+    });
+
+    QUnit.test( "Test Massachusetts", function( assert ) {
+        // Massachusetts   S+8Numeric or 9Numeric
+        testNumericRange(assert, 'US','MA', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','MA', '123456789'));
+        assert.ok(dlnValidator.isValid('US','MA', 'S12345678'));
+        assert.ok(dlnValidator.isValid('US','MA', 's12345678'));
+        assert.notOk(dlnValidator.isValid('US','MA', 'K12345678'));
+        assert.notOk(dlnValidator.isValid('US','MA', 'K123456789'));
+        assert.notOk(dlnValidator.isValid('US','MA', 'K1234567'));
+        assert.notOk(dlnValidator.isValid('US','MA', 'a'));
+    });
+
+    QUnit.test( "Test Michigan", function( assert ) {
+        // Michigan  1Alpha+12Numeric
+        assert.ok(dlnValidator.isValid('US','MI', 'K123456789012'));
+        assert.ok(dlnValidator.isValid('US','MI', 'A123456789012'));
+        assert.notOk(dlnValidator.isValid('US','MI', 'K1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','MI', 'K12345678901'));
+        assert.notOk(dlnValidator.isValid('US','MI', 'a'));
+    });
+
+    QUnit.test( "Test Minnesota", function( assert ) {
+        // Minnesota  1Alpha+12Numeric
+        assert.ok(dlnValidator.isValid('US','MN', 'K123456789012'));
+        assert.ok(dlnValidator.isValid('US','MN', 'A123456789012'));
+        assert.notOk(dlnValidator.isValid('US','MN', 'K1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','MN', 'K12345678901'));
+        assert.notOk(dlnValidator.isValid('US','MN', 'a'));
+    });
+    
+    QUnit.test( "Test Mississippi", function( assert ) {
+        // Mississippi   9Numeric
+        testNumericRange(assert, 'US','MS', 9, 9, true, true, true);
+    });
+
+    QUnit.test( "Test Missouri", function( assert ) {
+        // Missouri  1Alpha+5-9Numeric or 9Numeric
+        // TODO: varies a lot across sources
+        testNumericRange(assert, 'US','MO', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','MO', 'K123456789'));
+        assert.ok(dlnValidator.isValid('US','MO', 'A12345'));
+        assert.notOk(dlnValidator.isValid('US','MO', 'K1234567890'));
+        assert.notOk(dlnValidator.isValid('US','MO', 'K1234'));
+        assert.notOk(dlnValidator.isValid('US','MO', 'a'));
+    });
+
+    QUnit.test( "Test Montana", function( assert ) {
+        // Montana 9 alphanumeric or 13Numeric or 9Numeric
+        // TODO this source implies the 9 alphanumeric should be stricter:
+        // http://www.uiia.org/documents/license_guidelines_08.pdf
+        testNumericRange(assert, 'US','MT', 9, 9, false, true, false);
+        testNumericRange(assert, 'US','MT', 13, 13, false, false, true);
+        assert.ok(dlnValidator.isValid('US','MT', 'A1A23AAA4'));
+        assert.ok(dlnValidator.isValid('US','MT', 'A1123AAA4'));
+        assert.notOk(dlnValidator.isValid('US','MT', 'A1A23AAA45'));
+        assert.notOk(dlnValidator.isValid('US','MT', 'A1A23AAA'));
+        assert.notOk(dlnValidator.isValid('US','MT', 'a'));
+    });
+
+    QUnit.test( "Test Nebraska", function( assert ) {
+        // Nebraska  1 alpha+3-8 numeric
+        assert.ok(dlnValidator.isValid('US','NE', 'a123'));
+        assert.ok(dlnValidator.isValid('US','NE', 'a12345678'));
+        assert.notOk(dlnValidator.isValid('US','NE', '123'));
+        assert.notOk(dlnValidator.isValid('US','NE', '1234'));
+        assert.notOk(dlnValidator.isValid('US','NE', 'a1234567890'));
+    });
+
+    QUnit.test( "Test Nevada", function( assert ) {
+        // Nevada  9Numeric or 10Numeric or 12Numeric or X+8Numeric
+        // TODO: some sources like this https://insurancesolutions.custhelp.com/ci/fattach/get/2837083/0/session/L2F2LzEvdGltZS8xNDMyMDc0NzI5L3NpZC9MQ2hYV0xtbQ==/filename/MVR+Order+Requirements_122014.pdf
+        // imply it could be 9 numeric
+        testNumericRange(assert, 'US','NV', 10, 10, false, true, false);
+        testNumericRange(assert, 'US','NV', 12, 12, false, false, true);
+        assert.ok(dlnValidator.isValid('US','NV', 'X12345678'));
+        assert.notOk(dlnValidator.isValid('US','NV', 'A12345678'));
+        assert.notOk(dlnValidator.isValid('US','NV', 'X1234567'));
+        assert.notOk(dlnValidator.isValid('US','NV', 'X123456789'));
+    });
+
+    QUnit.test( "Test New Hampshire", function( assert ) {
+        // New Hampshire   2Numeric+3Alpha+5Numeric
+        assert.ok(dlnValidator.isValid('US','NH', '12AAA12345'));
+        assert.ok(dlnValidator.isValid('US','NH', '12bbb12345'));
+        assert.notOk(dlnValidator.isValid('US','NH', '12AAA1234'));
+        assert.notOk(dlnValidator.isValid('US','NH', '12AAA123456'));
+        assert.notOk(dlnValidator.isValid('US','NH', '12A1A12345'));
+    });
+
+    QUnit.test( "Test New Jersey", function( assert ) {
+        // New Jersey  1Alpha+14Numeric
+        assert.ok(dlnValidator.isValid('US','NJ', 'A12345678901234'));
+        assert.ok(dlnValidator.isValid('US','NJ', 'b12345678901234'));
+        assert.notOk(dlnValidator.isValid('US','NJ', 'A1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','NJ', 'A123456789012345'));
+        assert.notOk(dlnValidator.isValid('US','NJ', '012345678901234'));
+    });
+
+    QUnit.test( "Test New Mexico", function( assert ) {
+        // New Mexico 9Numeric
+        // TODO some sources indicate it could be 8 numeric
+        testNumericRange(assert, 'US','NM', 9, 9, true, true, true);
+    });
+
+    QUnit.test( "Test New York", function( assert ) {
+        // New York 9Numeric
+        // TODO widely varying other formats from various sources
+        testNumericRange(assert, 'US','NY', 9, 9, true, true, true);
+    });
+
+    QUnit.test( "Test North Carolina", function( assert ) {
+        // North Carolina  1-12Numeric
+        testNumericRange(assert, 'US','NC', 1, 12, true, true, true);
+    });
+
+    QUnit.test( "Test North Dakota", function( assert ) {
+        // North Dakota  3Alpha+6Numeric or 9Numeric
+        testNumericRange(assert, 'US','ND', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','ND', 'AAA123456'));
+        assert.notOk(dlnValidator.isValid('US','ND', '1AAA12345'));
+        assert.notOk(dlnValidator.isValid('US','ND', 'AAA12345'));
+        assert.notOk(dlnValidator.isValid('US','ND', 'AAA1234567'));
+    });
+
+    QUnit.test( "Test Ohio", function( assert ) {
+        // Ohio  9Numeric or 2Alpha+6Numeric
+        testNumericRange(assert, 'US','OH', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','OH', 'AA123456'));
+        assert.notOk(dlnValidator.isValid('US','OH', '1AAA1234'));
+        assert.notOk(dlnValidator.isValid('US','OH', 'AA12345'));
+        assert.notOk(dlnValidator.isValid('US','OH', 'AA1234567'));
+    });
+
+    QUnit.test( "Test Oklahoma", function( assert ) {
+        // Oklahoma  1Alpha+9Numeric or 9Numeric
+        testNumericRange(assert, 'US','OK', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','OK', 'A123456789'));
+        assert.notOk(dlnValidator.isValid('US','OK', '1A23456789'));
+        assert.notOk(dlnValidator.isValid('US','OK', 'A12345678'));
+        assert.notOk(dlnValidator.isValid('US','OK', 'A1234567890'));
+    });
+    
+    QUnit.test( "Test Oregon", function( assert ) {
+        // Oregon  1-9Numeric, 7-9 alphanumeric
+        testNumericRange(assert, 'US','OR', 1, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','OR', 'A123456'));
+        assert.ok(dlnValidator.isValid('US','OR', 'A1234567'));
+        assert.ok(dlnValidator.isValid('US','OR', 'A12345678'));
+        assert.notOk(dlnValidator.isValid('US','OR', 'A123456789'));
+        assert.notOk(dlnValidator.isValid('US','OR', 'A12345'));
+    });
+    
+    QUnit.test( "Test Pennsylvania", function( assert ) {
+        // Pennsylvania  8Numeric
+        testNumericRange(assert, 'US','PA', 8, 8, true, true, true);
+    });
+
+    QUnit.test( "Test Rhode Island", function( assert ) {
+        // Rhode Island  7Numeric or V+6Numeric
+        testNumericRange(assert, 'US','RI', 7, 7, false, true, true);
+        assert.ok(dlnValidator.isValid('US','RI', 'V123456'));
+        assert.notOk(dlnValidator.isValid('US','RI', 'A123456'));
+        assert.notOk(dlnValidator.isValid('US','RI', 'V1234567'));
+        assert.notOk(dlnValidator.isValid('US','RI', 'V12345'));
+    });
+
+    QUnit.test( "Test South Carolina", function( assert ) {
+        // South Carolina  1-10Numeric
+        // TODO: this seems to be very variable across sources
+        testNumericRange(assert, 'US','SC', 1, 10, true, true, true);
+    });
+
+    QUnit.test( "Test South Dakota", function( assert ) {
+        // South Dakota  6-9 Numeric
+        testNumericRange(assert, 'US','SD', 6, 9, true, true, true);
+    });
+
+    QUnit.test( "Test Tennessee", function( assert ) {
+        // Tennessee   7-9Numeric
+        // TODO some sources imply 8-9
+        testNumericRange(assert, 'US','TN', 7, 9, true, true, true);
+    });
+
+    QUnit.test( "Test Texas", function( assert ) {
+        // Texas   8Numeric
+        testNumericRange(assert, 'US','TX', 8, 8, true, true, true);
+    });
+
+    QUnit.test( "Test Utah", function( assert ) {
+        // Utah  4-10Numeric
+        testNumericRange(assert, 'US','UT', 4, 10, true, true, true);
+    });
+
+    QUnit.test( "Test Vermont", function( assert ) {
+        // Vermont   8Numeric or 7Numeric+A
+        testNumericRange(assert, 'US','VT', 8, 8, false, true, true);
+        assert.ok(dlnValidator.isValid('US','VT', '1234567A'));
+        assert.notOk(dlnValidator.isValid('US','VT', '1234567B'));
+        assert.notOk(dlnValidator.isValid('US','VT', '12345678A'));
+        assert.notOk(dlnValidator.isValid('US','VT', '123456A'));
+    });
+
+    QUnit.test( "Test Virginia", function( assert ) {
+        // Virginia  1Alpha+8Numeric or 9Numeric
+        testNumericRange(assert, 'US','VA', 9, 9, false, true, true);
+        assert.ok(dlnValidator.isValid('US','VA', 'A12345678'));
+        assert.ok(dlnValidator.isValid('US','VA', 'b12345678'));
+        assert.notOk(dlnValidator.isValid('US','VA', 'A1234567'));
+        assert.notOk(dlnValidator.isValid('US','VA', 'A123456789'));
+    });
+
+    QUnit.test( "Test Washington", function( assert ) {
+        // Washington  12 chars, first 7 are alphanumeric or *, then 3 numbers, then 2 alphanumerc
+        assert.ok(dlnValidator.isValid('US','WA', 'DOE**J*123A2'));
+        assert.ok(dlnValidator.isValid('US','WA', 'SMITHCN12322'));
+        assert.notOk(dlnValidator.isValid('US','WA', 'DOE**J*123A'));
+        assert.notOk(dlnValidator.isValid('US','WA', 'SMITHCN123222'));
+    });
+
+    // West Virginia   7 numeric or 1x + 5 numeric or XX + 5 numeric
+    QUnit.test( "Test West Virginia", function( assert ) {
+        // Virginia  1Alpha+8Numeric or 9Numeric
+        testNumericRange(assert, 'US','WV', 7, 7, false, true, true);
+        assert.ok(dlnValidator.isValid('US','WV', 'A123456'));
+        assert.ok(dlnValidator.isValid('US','WV', '1x12345'));
+        assert.ok(dlnValidator.isValid('US','WV', 'xx12345'));
+        assert.notOk(dlnValidator.isValid('US','WV', 'A1234567'));
+        assert.notOk(dlnValidator.isValid('US','WV', 'A123456789'));
+    });
+
+    QUnit.test( "Test Wisconsin", function( assert ) {
+        // Wisconsin   1Alpha+13Numeric
+        assert.ok(dlnValidator.isValid('US','WI', 'A1234567890123'));
+        assert.notOk(dlnValidator.isValid('US','WI', '12345678901234'));
+        assert.notOk(dlnValidator.isValid('US','WI', 'A123456789012'));
+        assert.notOk(dlnValidator.isValid('US','WI', 'A12345678901234'));
+    });
+
+    QUnit.test( "Test Wyoming", function( assert ) {
+        // Wyoming   9 numeric
+        testNumericRange(assert, 'US','WY', 9, 9, true, true, true);
+    });
+  </script>
+</body>
+</html>
